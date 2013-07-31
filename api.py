@@ -1,6 +1,6 @@
 from flask import Flask, request
-from flask.ext.restful import reqparse, abort, Api, Resource
-from subprocess import Popen, check_output
+from flask.ext.restful import Api, Resource
+from subprocess import Popen, check_output, PIPE
 from json import dumps
 
 app = Flask(__name__)
@@ -13,10 +13,9 @@ symbolicateApp = "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.
 class Symbolicate(Resource):
     def post(self):
 #        print request.form
-        crashlog = request.form['crashlog']
-        print crashlog
+        crashlog = request.files['crashlog']
         symbolicator = Popen([symbolicateApp, '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        (symbolicated, meta) = symbolicator.communicate(crashlog)
+        (symbolicated, meta) = symbolicator.communicate(crashlog.read())
         print meta
         print symbolicated
         return {'symbolicatedCrashlog': symbolicated, 'symbolicatorMetaOutput': meta}
@@ -35,3 +34,6 @@ def jsonify_crash_for_testing():
 if __name__ == '__main__':
    # jsonify_crash_for_testing()
     app.run(debug=True)
+
+# Requests of this form now work.
+# curl http://127.0.0.1:5000/symbolicate --form crashlog=@Fast_Lists-2013-07-19-11-46.crash -X POST
